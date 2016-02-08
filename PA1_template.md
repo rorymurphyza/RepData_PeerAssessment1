@@ -1,30 +1,24 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
-```{r load_packages, echo = FALSE, message = FALSE}
-options(scipen = 999)
-library(dplyr)
-library(lubridate)
-```
+# Reproducible Research: Peer Assessment 1
+
 
 ## Loading and preprocessing the data
 Read the data from the .zip file in to data frame d
-```{r unzip_data}
+
+```r
 unzip("activity.zip")
 d <- read.csv("activity.csv")
 ```
 Ensure that the date column in the data is in the correct format to make downstream process easier.
-```{r encode_dates}
+
+```r
 d$date <-  as.Date(as.character(d$date),
                    "%Y-%m-%d")
 ```
 
 
 Add a new column to the data set, time, which shows the actual time for each interval reported
-```{r add_time_values}
+
+```r
 temp <- sprintf("%04d", d$interval)
 temp <- format(strptime(temp, format = "%H%M"), format = "%H:%M")
 temp <- as.POSIXct(strptime(temp, "%H:%M"))
@@ -32,7 +26,8 @@ d <- mutate(d, time = temp)
 rm(temp)
 ```
 Turn the complete data frame in to a list of data frames, where each element of the list represents a single day of observations. 
-```{r create_list_element}
+
+```r
 ldata <- list()
 for(i in 1:(as.integer(max(d$date) - min(d$date)) + 1))
 {
@@ -46,7 +41,8 @@ rm(i, tempdate)
 ## What is mean total number of steps taken per day?
 We want to show the avergae number of taken per day during the testing period.
 
-```{r plot_mean_steps_per_day, echo = TRUE}
+
+```r
 stepsperday <- as.data.frame(NULL)
 for (i in 1:61)
 {
@@ -58,17 +54,19 @@ stepsperday$date <- as.Date(stepsperday$date, origin = "1970-01-01")
 hist(stepsperday$V1, 
      xlab = "Number of Steps",
      main = "Total Steps per Day")
-
 ```
 
-The test subject took an average of `r floor(mean(stepsperday$V1, na.rm = TRUE))` steps per day, with a median of `r median(stepsperday$V1, na.rm = TRUE)`.
+![](PA1_template_files/figure-html/plot_mean_steps_per_day-1.png)
+
+The test subject took an average of 10766 steps per day, with a median of 10765.
 
 ***
 
 ## What is the average daily activity pattern?
 We want to show the average number of steps taken per interval during the testing period.
 
-```{r plot_mean_steps_per_inteval, echo = TRUE}
+
+```r
 avesteps <- as.data.frame(NULL)
 for (i in 1:288)
 {
@@ -84,17 +82,18 @@ plot(avesteps$time, avesteps$avesteps,
      main = "Averaged Number of steps per time interval")
 ```
 
-The maximum number of steps taken in a time interval is `r which(avesteps$avesteps == max(avesteps$avesteps))` step, which occured in between the `r strftime(avesteps$time[which(avesteps$avesteps == max(avesteps$avesteps))], format = "%H:%M")` and `r strftime(avesteps$time[which(avesteps$avesteps == max(avesteps$avesteps)) + 1], format = "%H:%M")` intervals.
-```{r clean_up, echo = FALSE}
-rm(i, temp)
-```
+![](PA1_template_files/figure-html/plot_mean_steps_per_inteval-1.png)
+
+The maximum number of steps taken in a time interval is 104 step, which occured in between the 08:35 and 08:40 intervals.
+
 ***
 
 ## Inputing missing values
-There are some missing data values in the steps column. In total, we have `r sum(is.na(d$steps))` missing pieces of data.
+There are some missing data values in the steps column. In total, we have 2304 missing pieces of data.
 
 A simple way to fill in any missing pieces of data is to replace them with the mean number of steps taken during the rest of the corresponding intervals.
-```{r correct_for_NAs}
+
+```r
 corrected <- d
 for (i in 1:dim(d)[1])
 {
@@ -107,7 +106,8 @@ for (i in 1:dim(d)[1])
 
 We now have a new dataset called "corrected" which has has the missing (NA) data replaced with the averaged data from the rest of the data set.
 
-```{r plot_mean_steps_per_day_corrected}
+
+```r
 cdata <- list()
 for(i in 1:(as.integer(max(corrected$date) - min(corrected$date)) + 1))
 {
@@ -129,7 +129,9 @@ hist(stepsperday$V1,
      main = "Total Steps per Day")
 ```
 
-The test subject now took an average of `r floor(mean(stepsperday$V1))` steps per day, with a median of `r floor(median(stepsperday$V1))`. This is slightly different from the values that we caluculated when the missing data was incorporated in to the dataset.
+![](PA1_template_files/figure-html/plot_mean_steps_per_day_corrected-1.png)
+
+The test subject now took an average of 10766 steps per day, with a median of 10766. This is slightly different from the values that we caluculated when the missing data was incorporated in to the dataset.
 This makes sense, as the method that was used to replace missing data simply substituted an average value.
 
 ***
@@ -137,13 +139,15 @@ This makes sense, as the method that was used to replace missing data simply sub
 ## Are there differences in activity patterns between weekdays and weekends?
 
 First, we want to include the Day of the Week (dow) in to the corrected data set we created earlier. This will be a new factor variable indicating whether the day is a weekend or a weekday
-```{r add_weekday_factor}
+
+```r
 corrected$dow <- ifelse(wday(corrected$date) == 1, "weekend", "weekday")
 corrected$dow <- ifelse(wday(corrected$date) == 2, "weekend", "weekday")
 ```
 
 Now we want to plot this on two seperate axes, showing the average number of steps per time period over weekends and over weekdays
-```{r plot_mean_steps_per_interval_weekdays}
+
+```r
 avesteps <- as.data.frame(NULL)
 temp.weekend <- subset(corrected, corrected$dow == "weekend")
 temp.weekday <- subset(corrected, corrected$dow == "weekday")
@@ -172,6 +176,8 @@ plot(temp$time, temp$weekdaysteps,
      ylab = "Number of Steps",
      main = "Averaged Number of steps on Weekdays")
 ```
+
+![](PA1_template_files/figure-html/plot_mean_steps_per_interval_weekdays-1.png)
 
 This plot shows the difference between the steps take over weekends and weekdays. Unfortunately, I did not have enough time to get the factor part working and so plot the graph exactly as is in the requirements. I apologise for this.
 
